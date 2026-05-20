@@ -1,0 +1,180 @@
+name: Build Samsung Galaxy A52s 5G (AOSP Kernel 5.4.254)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  # Device env
+  DEVICE_NAME: "samsung_a52sxq"
+  DEVICE_CODENAME: "a52sxq"
+
+  CUSTOM_CMDS: "CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
+  EXTRA_CMDS: "LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip READELF=llvm-readelf HOSTCC=clang HOSTCXX=clang++"
+
+  # >>> Remplace par TON vrai repo kernel A52s AOSP / sm7325
+  KERNEL_SOURCE: "https://github.com/<ton_user>/<kernel_a52sxq_or_sm7325>.git"
+  KERNEL_BRANCH: "<ta_branche_aosp>"
+
+  # Toolchain
+  # Si ton kernel A52s a été prévu pour clang 11.0.2, garde une toolchain compatible
+  CLANG_SOURCE: "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
+  CLANG_BRANCH: ""
+
+  GCC_GNU: true
+  GCC_64_SOURCE: "https://github.com/nduykha/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.git"
+  GCC_64_BRANCH: "main"
+  GCC_32_SOURCE: ""
+  GCC_32_BRANCH: ""
+
+  DEFCONFIG_SOURCE: ""
+  # >>> Remplace par le vrai defconfig présent dans arch/arm64/configs/
+  DEFCONFIG_NAME: "a52sxq_defconfig"
+  DEFCONFIG_ORIGIN_IMAGE: ""
+  DEFCONFIG_FROM_BOOT: false
+
+  KERNELSU_SOURCE: ""
+  KERNELSU_BRANCH: ""
+
+  KERNELSU_AUTO_GET: "true"
+  KERNELSU_AUTO_FORK: "resukisu"
+
+  SUSFS_ENABLE: true
+  SUSFS_FIXED: true
+
+  AK3_SOURCE: "https://github.com/osm0sis/AnyKernel3.git"
+  AK3_BRANCH: "master"
+
+  BOOT_SOURCE: ""
+
+  NEED_DTBO: true
+  NEED_SAFE_DTBO: true
+
+  ROM_TEXT: "aosp_a16"
+
+  PYTHON_VERSION: "3"
+
+  PACK_METHOD: "Anykernel3"
+  PACK_KMODULES: "false"
+
+  KERNELSU_METHOD: "shell"
+
+  PATCHES_SOURCE: "JackA1ltman/NonGKI_Kernel_Patches"
+  PATCHES_BRANCH: "samsung_kernel"
+
+  # >>> adapte selon le nom du dossier patch A52s
+  SUSFS_FOLDER_FIXED: "a52sxq_sm7325"
+  SUSFS_PATCH_FIXED: "susfs_fixed"
+
+  REKERNEL_ENABLE: "true"
+
+  HOOK_METHOD: "syscall"
+  KERNEL_PATCH: "false"
+
+  KPM_ENABLE: "true"
+  KPM_INLINE: "true"
+  KPM_KPATCH_NEXT: "false"
+  KPM_PATCH_SOURCE: "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU_patch/refs/heads/main/kpm/patch_linux"
+
+  BASEBAND_GUARD_ENABLE: "true"
+  BASEBAND_GUARD_BOOT: "false"
+
+  HIDE_STUFF: "true"
+
+  GENERATE_DTB: "false"
+  GENERATE_CHIP: "qcom"
+
+  BUILD_DEBUGGER: "false"
+  SKIP_PATCH: "false"
+
+  BUILD_OTHER_CONFIG: "true"
+  MERGE_CONFIG_FILES: "a52sxq.config"
+
+  FREE_MORE_SPACE: "false"
+
+jobs:
+  build-kernel:
+    name: Samsung Galaxy A52s 5G (AOSP A16)
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
+
+    steps:
+      - name: ⏰ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⌛️ Compilation environment preparation
+        uses: ./.github/workflows/build-env
+
+      - name: ⌛️ Get necessary tools
+        uses: ./.github/workflows/build-ready
+
+      - name: 🪝 Patch Kernel of SUSFS
+        uses: ./.github/workflows/patch-susfs
+
+      - name: 🔗 Patch for no-kprobe
+        uses: ./.github/workflows/patch-no-kprobe
+
+      - name: 🪛 Extra Kernel Options
+        run: |
+          cd $GITHUB_WORKSPACE/device_kernel
+
+          sed -i 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+          echo "[+] Kernel name updated to -HaoticKernel"
+
+          sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c || true
+
+          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+
+          cat <<EOF >> arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          CONFIG_DEBUG_KERNEL=y
+          CONFIG_KALLSYMS=y
+          CONFIG_KALLSYMS_ALL=y
+          EOF
+
+          echo "[+] Fixed KPM feature"
+
+      - name: 🧰 Patch Kernel of Re:Kernel
+        uses: ./.github/workflows/patch-rekernel
+
+      - name: 🔒 Patch Kernel of Baseband Guard
+        uses: ./.github/workflows/patch-baseband-guard
+
+      - name: 🔧 Patch Hide Stuff
+        uses: ./.github/workflows/patch-hide-stuff
+
+      - name: 🚀 Build Process
+        uses: ./.github/workflows/build-process
+
+      - name: 🔍 Verify and Create DTBO Image
+        run: |
+          cd $GITHUB_WORKSPACE/device_kernel
+
+          echo "🔍 Searching for .dtbo files..."
+          DTBO_FILES=$(find out -type f -name "*.dtbo")
+
+          if [ -z "$DTBO_FILES" ]; then
+            echo "❌ No .dtbo files found! Check build logs for dtbs errors."
+            exit 1
+          fi
+
+          echo "📦 Creating dtbo.img..."
+          ./tools/mkdtimg create out/arch/arm64/boot/dtbo.img --page_size=4096 ${DTBO_FILES}
+
+          if [ -f "out/arch/arm64/boot/dtbo.img" ]; then
+            echo "✅ DTBO created successfully at out/arch/arm64/boot/dtbo.img"
+          else
+            echo "❌ DTBO creation failed!"
+            find out/ -name "*.img"
+            exit 1
+          fi
+
+      - name: 🔩 Pack Process
+        uses: ./.github/workflows/pack-process
+
+      - name: ✏️ Upload Artifacts
+        uses: ./.github/workflows/upload-files
