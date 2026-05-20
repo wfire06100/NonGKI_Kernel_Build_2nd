@@ -1,4 +1,4 @@
-name: Build Samsung Galaxy A52s 5G (AOSP Kernel 5.4.254)
+name: Build Samsung Galaxy A52s 5G (AOSP A16)
 
 on:
   workflow_call:
@@ -12,12 +12,11 @@ env:
   CUSTOM_CMDS: "CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
   EXTRA_CMDS: "LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip READELF=llvm-readelf HOSTCC=clang HOSTCXX=clang++"
 
-  # >>> Remplace par TON vrai repo kernel A52s AOSP / sm7325
-  KERNEL_SOURCE: "https://github.com/<ton_user>/<kernel_a52sxq_or_sm7325>.git"
-  KERNEL_BRANCH: "<ta_branche_aosp>"
+  # A52s / SM7325 kernel source
+  KERNEL_SOURCE: "https://github.com/LineageOS/android_kernel_samsung_sm7325.git"
+  KERNEL_BRANCH: "lineage-22.1"
 
   # Toolchain
-  # Si ton kernel A52s a été prévu pour clang 11.0.2, garde une toolchain compatible
   CLANG_SOURCE: "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
   CLANG_BRANCH: ""
 
@@ -28,7 +27,9 @@ env:
   GCC_32_BRANCH: ""
 
   DEFCONFIG_SOURCE: ""
-  # >>> Remplace par le vrai defconfig présent dans arch/arm64/configs/
+  # Sur beaucoup de kernels Samsung/Lineage communs SM7325, ce nom est souvent spécifique au device tree/build logic.
+  # Si ton action build-process injecte déjà le defconfig via le common tree, garde cette valeur.
+  # Sinon il faudra ajuster au vrai nom présent dans arch/arm64/configs.
   DEFCONFIG_NAME: "a52sxq_defconfig"
   DEFCONFIG_ORIGIN_IMAGE: ""
   DEFCONFIG_FROM_BOOT: false
@@ -40,7 +41,7 @@ env:
   KERNELSU_AUTO_FORK: "resukisu"
 
   SUSFS_ENABLE: true
-  SUSFS_FIXED: true
+  SUSFS_FIXED: false
 
   AK3_SOURCE: "https://github.com/osm0sis/AnyKernel3.git"
   AK3_BRANCH: "master"
@@ -52,6 +53,7 @@ env:
 
   ROM_TEXT: "aosp_a16"
 
+  # Other env
   PYTHON_VERSION: "3"
 
   PACK_METHOD: "Anykernel3"
@@ -62,9 +64,8 @@ env:
   PATCHES_SOURCE: "JackA1ltman/NonGKI_Kernel_Patches"
   PATCHES_BRANCH: "samsung_kernel"
 
-  # >>> adapte selon le nom du dossier patch A52s
-  SUSFS_FOLDER_FIXED: "a52sxq_sm7325"
-  SUSFS_PATCH_FIXED: "susfs_fixed"
+  SUSFS_FOLDER_FIXED: ""
+  SUSFS_PATCH_FIXED: ""
 
   REKERNEL_ENABLE: "true"
 
@@ -108,7 +109,7 @@ jobs:
       - name: ⌛️ Compilation environment preparation
         uses: ./.github/workflows/build-env
 
-      - name: ⌛️ Get necessary tools
+      - name: ⚙️ Get necessary tools
         uses: ./.github/workflows/build-ready
 
       - name: 🪝 Patch Kernel of SUSFS
@@ -121,22 +122,29 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/device_kernel
 
-          sed -i 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
-          echo "[+] Kernel name updated to -HaoticKernel"
+          if [ -f "arch/arm64/configs/${{ env.DEFCONFIG_NAME }}" ]; then
+            sed -i 's/CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+            echo "[+] Kernel name updated to -HaoticKernel"
 
-          sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c || true
+            sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+            sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+            sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
 
-          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
-          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
-          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }} || true
+            cat <<EOF >> arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+CONFIG_DEBUG_KERNEL=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+EOF
+          else
+            echo "[-] Defconfig arch/arm64/configs/${{ env.DEFCONFIG_NAME }} not found, skipping direct defconfig edits"
+            echo "[i] Available configs:"
+            ls arch/arm64/configs | head -n 100
+          fi
 
-          cat <<EOF >> arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          CONFIG_DEBUG_KERNEL=y
-          CONFIG_KALLSYMS=y
-          CONFIG_KALLSYMS_ALL=y
-          EOF
-
-          echo "[+] Fixed KPM feature"
+          if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
+            sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c || true
+            echo "[+] Fixed KPM feature"
+          fi
 
       - name: 🧰 Patch Kernel of Re:Kernel
         uses: ./.github/workflows/patch-rekernel
@@ -158,7 +166,8 @@ jobs:
           DTBO_FILES=$(find out -type f -name "*.dtbo")
 
           if [ -z "$DTBO_FILES" ]; then
-            echo "❌ No .dtbo files found! Check build logs for dtbs errors."
+            echo "❌ No .dtbo files found! Check your build log for dtbs errors."
+            find out -type f | grep -E 'dtb|dtbo' || true
             exit 1
           fi
 
@@ -168,7 +177,7 @@ jobs:
           if [ -f "out/arch/arm64/boot/dtbo.img" ]; then
             echo "✅ DTBO created successfully at out/arch/arm64/boot/dtbo.img"
           else
-            echo "❌ DTBO creation failed!"
+            echo "❌ DTBO creation failed! Listing images for debug:"
             find out/ -name "*.img"
             exit 1
           fi
