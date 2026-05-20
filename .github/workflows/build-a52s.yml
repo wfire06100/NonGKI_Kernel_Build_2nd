@@ -6,47 +6,47 @@ on:
 
 env:
   # Device env
-  DEVICE_NAME: "samsung_a52sxq"
-  DEVICE_CODENAME: "a52sxq"
+  DEVICE_NAME : "samsung_a52sxq"
+  DEVICE_CODENAME : "a52sxq"
 
-  CUSTOM_CMDS: "CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu-"
-  EXTRA_CMDS: "LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip READELF=llvm-readelf HOSTCC=clang HOSTCXX=clang++"
+  CUSTOM_CMDS : "CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu-"
+  EXTRA_CMDS : "LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip READELF=llvm-readelf HOSTCC=clang HOSTCXX=clang++"
 
-  KERNEL_SOURCE: "https://github.com/LineageOS/android_kernel_samsung_sm7325.git"
-  KERNEL_BRANCH: "lineage-22.1"
+  KERNEL_SOURCE : "https://github.com/LineageOS/android_kernel_samsung_sm7325.git"
+  KERNEL_BRANCH : "lineage-22.1"
 
-  CLANG_SOURCE: "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
-  CLANG_BRANCH: ""
+  CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
+  CLANG_BRANCH : ""
 
-  GCC_GNU: true
-  GCC_64_SOURCE: "https://github.com/nduykha/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.git"
-  GCC_64_BRANCH: "main"
-  GCC_32_SOURCE: ""
-  GCC_32_BRANCH: ""
+  GCC_GNU : true
+  GCC_64_SOURCE : "https://github.com/nduykha/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.git"
+  GCC_64_BRANCH : "main"
+  GCC_32_SOURCE : ""
+  GCC_32_BRANCH : ""
 
   DEFCONFIG_SOURCE: ""
-  DEFCONFIG_NAME: "a52sxq_defconfig"
+  DEFCONFIG_NAME : "a52sxq_defconfig"
   DEFCONFIG_ORIGIN_IMAGE: ""
   DEFCONFIG_FROM_BOOT: false
 
-  KERNELSU_SOURCE: ""
-  KERNELSU_BRANCH: ""
+  KERNELSU_SOURCE : ""
+  KERNELSU_BRANCH : ""
 
-  KERNELSU_AUTO_GET: "true" # if u want easy setting kernelsu, u can true.
-  KERNELSU_AUTO_FORK: "resukisu" # magic, rsuntk, next, resukisu and sukisu
+  KERNELSU_AUTO_GET : "true" # if u want easy setting kernelsu, u can true.
+  KERNELSU_AUTO_FORK : "next" # magic, rsuntk, next, resukisu and sukisu
 
-  SUSFS_ENABLE: true
-  SUSFS_FIXED: true
+  SUSFS_ENABLE : true
+  SUSFS_FIXED : true
 
-  AK3_SOURCE: "https://github.com/osm0sis/AnyKernel3.git"
-  AK3_BRANCH: "master"
+  AK3_SOURCE : "https://github.com/osm0sis/AnyKernel3.git"
+  AK3_BRANCH : "master"
 
-  BOOT_SOURCE: ""
+  BOOT_SOURCE : ""
 
-  NEED_DTBO: true
-  NEED_SAFE_DTBO: true
+  NEED_DTBO : true
+  NEED_SAFE_DTBO : true
 
-  ROM_TEXT: "aosp_a16"
+  ROM_TEXT : "aosp_a16"
 
   # Other env
   PYTHON_VERSION: "3" # Only 2(Ubuntu 22.04 and Ubuntu 20.04) or 3(Any OS Versions).
@@ -76,7 +76,7 @@ env:
   BASEBAND_GUARD_ENABLE: "true" #if u want prevent unauthorized writes to critical partitions/device nodes.
   BASEBAND_GUARD_BOOT: "false" #if u want to protect boot partition.
 
-  HIDE_STUFF: "true" # hide some of the features
+  HIDE_STUFF: "true" # hide some of the features"
 
   GENERATE_DTB: "false" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
   GENERATE_CHIP: "qcom" # only supported for qcom and mediatek.
@@ -118,26 +118,20 @@ jobs:
       - name: 🪛 Extra Kernel Options
         run: |
           # Only ${{ env.DEVICE_NAME }} use it.
-          cd "$GITHUB_WORKSPACE/device_kernel"
-
-          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
+          cd $GITHUB_WORKSPACE/device_kernel
+          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/a52sxq_defconfig
           echo "[+] Kernel name has been updated to -HaoticKernel"
-
-          if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
-            sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
-          fi
-
-          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-
-          cat <<EOF >> arch/arm64/configs/${{ env.DEFCONFIG_NAME }}
-CONFIG_DEBUG_KERNEL=y
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_ALL=y
-EOF
-
+          sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
+          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/a52sxq_defconfig
+          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/a52sxq_defconfig
+          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/a52sxq_defconfig
+          cat <<EOF >> arch/arm64/configs/a52sxq_defconfig
+          CONFIG_DEBUG_KERNEL=y
+          CONFIG_KALLSYMS=y
+          CONFIG_KALLSYMS_ALL=y
+          EOF
           echo "[+] Fixed KPM feature"
+          # Nothing
 
       - name: 🧰 Patch Kernel of Re:Kernel
         uses: ./.github/workflows/patch-rekernel
@@ -153,7 +147,7 @@ EOF
 
       - name: 🔍 Verify and Create DTBO Image
         run: |
-          cd "$GITHUB_WORKSPACE/device_kernel"
+          cd $GITHUB_WORKSPACE/device_kernel
 
           echo "🔍 Searching for .dtbo files..."
           DTBO_FILES=$(find out -type f -name "*.dtbo")
