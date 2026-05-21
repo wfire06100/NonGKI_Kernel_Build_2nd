@@ -45,8 +45,8 @@ env:
 
   BOOT_SOURCE : ""
 
-  NEED_DTBO : false
-  NEED_SAFE_DTBO : false
+  NEED_DTBO : true
+  NEED_SAFE_DTBO : true
 
   ROM_TEXT : "aosp_a16"
 
