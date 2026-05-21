@@ -138,8 +138,11 @@ jobs:
       - name: 🪛 Extra Kernel Options
         run: |
           # Only ${{ env.DEVICE_NAME }} use it.
-          cd $GITHUB_WORKSPACE/device_kernel
-          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/vendor/a52sxq_kor_single_defconfig
+          cd "$GITHUB_WORKSPACE/device_kernel"
+
+          DEFCONFIG_PATH="arch/${{ env.KERNEL_ARCH }}/configs/${{ env.DEFCONFIG_NAME }}"
+
+          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' "$DEFCONFIG_PATH"
           echo "[+] Kernel name has been updated to -HaoticKernel"
 
           if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
@@ -149,10 +152,11 @@ jobs:
             echo "[-] drivers/kernelsu/kpm/super_access.c not found, skipping KPM sed patch"
           fi
 
-          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/a52sxq_defconfig
-          cat <<EOF >> arch/arm64/configs/a52sxq_defconfig
+          sed -i '/CONFIG_DEBUG_KERNEL/d' "$DEFCONFIG_PATH"
+          sed -i '/CONFIG_KALLSYMS/d' "$DEFCONFIG_PATH"
+          sed -i '/CONFIG_KALLSYMS_ALL/d' "$DEFCONFIG_PATH"
+
+          cat <<EOF >> "$DEFCONFIG_PATH"
           CONFIG_DEBUG_KERNEL=y
           CONFIG_KALLSYMS=y
           CONFIG_KALLSYMS_ALL=y
