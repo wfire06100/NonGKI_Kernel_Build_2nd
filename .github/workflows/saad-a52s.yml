@@ -178,7 +178,10 @@ jobs:
       - name: 🔍 Verify and Create DTBO Image
         run: |
           cd $GITHUB_WORKSPACE/device_kernel
-
+          
+          chmod +x ./tools/mkdtimg
+          ls -l ./tools/mkdtimg
+          
           echo "🔍 Searching for .dtbo files..."
           DTBO_FILES=$(find out -type f -name "*.dtbo")
 
