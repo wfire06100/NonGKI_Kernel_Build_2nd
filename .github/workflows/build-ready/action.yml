@@ -208,12 +208,12 @@ runs:
 
 
           # Core
-          if [[ ${{ env.KERNELSU_AUTO_GET }} == "true" ]]; then
+          if [[ "${{ env.KERNELSU_IN_KERNEL }}" == "true" ]]; then
+            echo "[+] KernelSU already exists in kernel source, skipping KernelSU setup."
+          elif [[ "${{ env.KERNELSU_AUTO_GET }}" == "true" ]]; then
             KERNELSU_AUTO
-
           else
             KERNELSU_MANUAL
-
           fi
           echo "KERNELSU_METHOD=${{ env.KERNELSU_METHOD }}" >> $GITHUB_ENV
 
