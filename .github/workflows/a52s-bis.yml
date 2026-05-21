@@ -139,7 +139,7 @@ jobs:
         run: |
           # Only ${{ env.DEVICE_NAME }} use it.
           cd $GITHUB_WORKSPACE/device_kernel
-          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/a52sxq_defconfig
+          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/vendor/a52sxq_kor_single_defconfig
           echo "[+] Kernel name has been updated to -HaoticKernel"
 
           if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
