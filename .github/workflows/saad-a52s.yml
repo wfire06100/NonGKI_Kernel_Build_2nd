@@ -16,8 +16,8 @@ env:
  # KERNEL_BRANCH : "ksu-next"
   KERNEL_BRANCH : "stock"
   
-  CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
-  #CLANG_SOURCE : "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz"
+  #CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
+  CLANG_SOURCE : "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz"
   CLANG_BRANCH : ""
 
   GCC_GNU : true
