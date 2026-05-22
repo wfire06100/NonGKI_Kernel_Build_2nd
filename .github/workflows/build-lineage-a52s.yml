@@ -1,4 +1,4 @@
-name: Build Samsung Galaxy A52s 5G (Based AOSP A16)
+name: Build lineage Samsung Galaxy A52s
 
 on:
   workflow_call:
@@ -25,7 +25,7 @@ env:
   GCC_32_BRANCH : ""
 
   DEFCONFIG_SOURCE: ""
-  DEFCONFIG_NAME : "a52sxq_defconfig"
+  DEFCONFIG_NAME : "vendor/lineage-a52sxq_defconfig"
   DEFCONFIG_ORIGIN_IMAGE: ""
   DEFCONFIG_FROM_BOOT: false
 
@@ -33,10 +33,10 @@ env:
   KERNELSU_BRANCH : ""
 
   KERNELSU_AUTO_GET : "true" # if u want easy setting kernelsu, u can true.
-  KERNELSU_AUTO_FORK : "next" # magic, rsuntk, next, resukisu and sukisu
+  KERNELSU_AUTO_FORK : "sukisu" # magic, rsuntk, next, resukisu and sukisu
 
   SUSFS_ENABLE : true
-  SUSFS_FIXED : true
+  SUSFS_FIXED : false
 
   AK3_SOURCE : "https://github.com/osm0sis/AnyKernel3.git"
   AK3_BRANCH : "master"
@@ -52,7 +52,7 @@ env:
   PYTHON_VERSION: "3" # Only 2(Ubuntu 22.04 and Ubuntu 20.04) or 3(Any OS Versions).
 
   PACK_METHOD: "Anykernel3" # Anykernel3 need SOURCE and BRANCH, MKBOOTIMG needn't it.
-  PACK_KMODULES: "false" # if u want pack kernel modules (.ko) into Anykernel3.
+  PACK_KMODULES: "true" # if u want pack kernel modules (.ko) into Anykernel3.
 
   KERNELSU_METHOD: "shell" # shell, manual and only.
 
@@ -78,7 +78,7 @@ env:
 
   HIDE_STUFF: "true" # hide some of the features"
 
-  GENERATE_DTB: "false" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
+  GENERATE_DTB: "true" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
   GENERATE_CHIP: "qcom" # only supported for qcom and mediatek.
 
   BUILD_DEBUGGER: "false" # Output build errors.
@@ -115,47 +115,28 @@ jobs:
       - name: 🔗 Patch for no-kprobe
         uses: ./.github/workflows/patch-no-kprobe
 
-  #    - name: 🪛 Extra Kernel Options
-    #    run: |
-          # Only ${{ env.DEVICE_NAME }} use it.
-   #       cd $GITHUB_WORKSPACE/device_kernel
-   #       sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/a52sxq_defconfig
-    #      echo "[+] Kernel name has been updated to -HaoticKernel"
-    #      sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
-    #      sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/a52sxq_defconfig
-      #    sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/a52sxq_defconfig
-      #    sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/a52sxq_defconfig
-      #    cat <<EOF >> arch/arm64/configs/a52sxq_defconfig
-      #    CONFIG_DEBUG_KERNEL=y
-      #    CONFIG_KALLSYMS=y
-      #    CONFIG_KALLSYMS_ALL=y
-      #    EOF
-      #    echo "[+] Fixed KPM feature"
-          # Nothing
-
       - name: 🪛 Extra Kernel Options
         run: |
           # Only ${{ env.DEVICE_NAME }} use it.
-          cd $GITHUB_WORKSPACE/device_kernel
-          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/a52sxq_defconfig
+          cd "$GITHUB_WORKSPACE/device_kernel"
+
+          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
           echo "[+] Kernel name has been updated to -HaoticKernel"
 
           if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
-            sed -i 's/pids\\[PIDTYPE_PID\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
+            sed -i 's/pids\\\\[PIDTYPE_PID\\\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
             echo "[+] Fixed KPM feature"
-          else
-            echo "[-] drivers/kernelsu/kpm/super_access.c not found, skipping KPM sed patch"
           fi
 
-          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/a52sxq_defconfig
-          cat <<EOF >> arch/arm64/configs/a52sxq_defconfig
+          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
+          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
+          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
+
+          cat <<EOF >> arch/arm64/configs/vendor/lineage-a52sxq_defconfig
           CONFIG_DEBUG_KERNEL=y
           CONFIG_KALLSYMS=y
           CONFIG_KALLSYMS_ALL=y
           EOF
-          # Nothing
 
       - name: 🧰 Patch Kernel of Re:Kernel
         uses: ./.github/workflows/patch-rekernel
