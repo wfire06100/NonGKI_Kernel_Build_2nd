@@ -117,26 +117,45 @@ jobs:
 
       - name: 🪛 Extra Kernel Options
         run: |
-          # Only ${{ env.DEVICE_NAME }} use it.
-          cd "$GITHUB_WORKSPACE/device_kernel"
+         # Only ${{ env.DEVICE_NAME }} use it.
+         cd "$GITHUB_WORKSPACE/device_kernel"
 
-          sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
-          echo "[+] Kernel name has been updated to -HaoticKernel"
+         DEFCONFIG="arch/arm64/configs/vendor/lineage-a52sxq_defconfig"
 
-          if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
-            sed -i 's/pids\\\\[PIDTYPE_PID\\\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
-            echo "[+] Fixed KPM feature"
-          fi
+         sed -i 's/CONFIG_LOCALVERSION="-Paradigm"/CONFIG_LOCALVERSION="-HaoticKernel"/g' "$DEFCONFIG"
+         echo "[+] Kernel name has been updated to -HaoticKernel"
 
-          sed -i '/CONFIG_DEBUG_KERNEL/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
-          sed -i '/CONFIG_KALLSYMS_ALL/d' arch/arm64/configs/vendor/lineage-a52sxq_defconfig
+         if [ -f "drivers/kernelsu/kpm/super_access.c" ]; then
+          sed -i 's/pids\\\\\\\\[PIDTYPE_PID\\\\\\\\].pid/thread_pid/g' drivers/kernelsu/kpm/super_access.c
+          echo "[+] Fixed KPM feature"
+         fi
 
-          cat <<EOF >> arch/arm64/configs/vendor/lineage-a52sxq_defconfig
-          CONFIG_DEBUG_KERNEL=y
-          CONFIG_KALLSYMS=y
-          CONFIG_KALLSYMS_ALL=y
-          EOF
+         sed -i '/CONFIG_DEBUG_KERNEL/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KALLSYMS/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KALLSYMS_ALL/d' "$DEFCONFIG"
+
+         sed -i '/CONFIG_KSU_SUSFS/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KSU_SUSFS_SUS_PATH/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KSU_SUSFS_SUS_MOUNT/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KSU_SUSFS_SUS_KSTAT/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KSU_SUSFS_OPEN_REDIRECT/d' "$DEFCONFIG"
+         sed -i '/CONFIG_KSU_SUSFS_SUS_MAP/d' "$DEFCONFIG"
+
+         cat <<EOF >> "$DEFCONFIG"
+         CONFIG_DEBUG_KERNEL=y
+         CONFIG_KALLSYMS=y
+         CONFIG_KALLSYMS_ALL=y
+         CONFIG_KSU_SUSFS=y
+         CONFIG_KSU_SUSFS_SUS_PATH=y
+         CONFIG_KSU_SUSFS_SUS_MOUNT=y
+         CONFIG_KSU_SUSFS_SUS_KSTAT=y
+         CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+         CONFIG_KSU_SUSFS_SUS_MAP=y
+         EOF
+
+         echo "[+] Added extra kernel options"
+
+
 
       - name: 🧰 Patch Kernel of Re:Kernel
         uses: ./.github/workflows/patch-rekernel
