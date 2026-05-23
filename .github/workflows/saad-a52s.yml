@@ -206,16 +206,16 @@ jobs:
 
           mkdir -p "$GITHUB_WORKSPACE/tools"
 
-          if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
-            curl -L \
-              "https://github.com/alitekin2fx/magiskboot/raw/master/magiskboot" \
+           if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
+            curl -fL \
+              "https://raw.githubusercontent.com/alitekin2fx/magiskboot/master/magiskboot" \
               -o "$GITHUB_WORKSPACE/tools/magiskboot_x86"
             chmod +x "$GITHUB_WORKSPACE/tools/magiskboot_x86"
           fi
 
           if [ ! -f "$GITHUB_WORKSPACE/tools/avbtool" ]; then
-            curl -L \
-              "https://android.googlesource.com/platform/external/avb/+/master/avbtool?format=TEXT" \
+            curl -fL \
+              "https://android.googlesource.com/platform/external/avb/+/063b3f50d8997b25345c992246ef36da53309689/avbtool?format=TEXT" \
               | base64 -d > "$GITHUB_WORKSPACE/tools/avbtool"
             chmod +x "$GITHUB_WORKSPACE/tools/avbtool"
           fi
