@@ -106,6 +106,13 @@ jobs:
       - name: ⏰ Checkout repository
         uses: actions/checkout@v4
 
+      - name: ⏰ Checkout template repository
+        uses: actions/checkout@v4
+        with:
+          repository: wfire06100/bone-fork
+          path: bone-fork
+          fetch-depth: 1
+
       - name: ⌛️ Compilation environment preparation
         uses: ./.github/workflows/build-env
 
@@ -215,7 +222,7 @@ jobs:
 
           MAIN_DIR="$GITHUB_WORKSPACE"
           SRC_DIR="$GITHUB_WORKSPACE/device_kernel"
-          TEMPLATE_DIR="$GITHUB_WORKSPACE/template-zip-file"
+          TEMPLATE_DIR="$GITHUB_WORKSPACE/bone-fork/template-zip-file"
           STOCK_DIR="$TEMPLATE_DIR/images"
           WORK_DIR="$GITHUB_WORKSPACE/output/eur-custom"
           ZIP_ROOT="$WORK_DIR/zip"
