@@ -195,7 +195,7 @@ jobs:
       - name: 🔩 Pack Process
         uses: ./.github/workflows/pack-process
 
-      - name: 📦 Build EUR custom package
+      - name: 📦 Build EUR custom package from compiled artifacts
         shell: bash
         run: |
           set -euo pipefail
@@ -206,7 +206,7 @@ jobs:
 
           mkdir -p "$GITHUB_WORKSPACE/tools"
 
-           if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
+          if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
             curl -fL \
               "https://raw.githubusercontent.com/alitekin2fx/magiskboot/master/magiskboot" \
               -o "$GITHUB_WORKSPACE/tools/magiskboot_x86"
@@ -262,7 +262,7 @@ jobs:
           cp "$STOCK_DIR/boot.img" "$WORK_DIR/tmp_boot/boot.img"
 
           cd "$WORK_DIR/tmp_boot"
-          "$TOOLS_DIR/avbtool.py" erase_footer --image boot.img || true
+          python3 "$TOOLS_DIR/avbtool.py" erase_footer --image boot.img || true
           "$TOOLS_DIR/magiskboot_x86" --unpack boot.img
           rm -f kernel
           cp "$SRC_DIR/out/arch/arm64/boot/Image" kernel
@@ -278,8 +278,8 @@ jobs:
           cp "$STOCK_DIR/vendor_boot.img" "$WORK_DIR/tmp_vendor_boot/vendor_boot.img"
 
           cd "$WORK_DIR/tmp_vendor_boot"
-          "$TOOLS_DIR/avbtool.py" erase_footer --image vendor_boot.img || true
-          "$TOOLS_DIR/magiskboot_x86" --unpack -h vendor_boot.img
+          python3 "$TOOLS_DIR/avbtool.py" erase_footer --image vendor_boot.img || true
+          "$TOOLS_DIR/magiskboot_x86" --unpack vendor_boot.img
 
           if [ -f header ]; then
             sed "1 c\\name=${RP_REV}" header > header_new
