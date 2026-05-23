@@ -207,12 +207,21 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/tools"
 
           if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/tools/tmp_magiskboot"
+
             curl -fL \
-              "https://raw.githubusercontent.com/alitekin2fx/magiskboot/master/magiskboot" \
-              -o "$GITHUB_WORKSPACE/tools/magiskboot_x86"
+              "https://github.com/magojohnji/magiskboot-linux/archive/refs/heads/main.zip" \
+              -o "$GITHUB_WORKSPACE/tools/magiskboot-linux.zip"
+
+            unzip -q "$GITHUB_WORKSPACE/tools/magiskboot-linux.zip" \
+              -d "$GITHUB_WORKSPACE/tools/tmp_magiskboot"
+
+            cp "$GITHUB_WORKSPACE/tools/tmp_magiskboot/magiskboot-linux-main/x86_64/magiskboot" \
+              "$GITHUB_WORKSPACE/tools/magiskboot_x86"
+
             chmod +x "$GITHUB_WORKSPACE/tools/magiskboot_x86"
           fi
-
+          
           if [ ! -f "$GITHUB_WORKSPACE/tools/avbtool.py" ]; then
             curl -fL \
               "https://android.googlesource.com/platform/external/avb/+/master/avbtool.py?format=TEXT" \
