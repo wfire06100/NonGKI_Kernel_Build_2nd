@@ -113,6 +113,13 @@ jobs:
           path: bone-fork
           fetch-depth: 1
 
+      - name: ⏰ Checkout template repository
+        uses: actions/checkout@v4
+        with:
+          repository: wfire06100/bone-fork
+          path: bone-fork
+          fetch-depth: 1
+
       - name: ⌛️ Compilation environment preparation
         uses: ./.github/workflows/build-env
 
