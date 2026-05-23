@@ -356,6 +356,14 @@ jobs:
 
           echo "===> Final package created"
           ls -lh "$WORK_DIR/Builds/"
+
+      - name: 📤 Upload EUR custom package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fork-Ascendia-KSU-EUR
+          path: ${{ github.workspace }}/output/eur-custom/Builds/*.zip
+          if-no-files-found: error
+          compression-level: 0
         
       - name: ✏️ Upload Artifacts
         uses: ./.github/workflows/upload-files
