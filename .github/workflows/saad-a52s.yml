@@ -263,10 +263,10 @@ jobs:
 
           cd "$WORK_DIR/tmp_boot"
           "$TOOLS_DIR/avbtool.py" erase_footer --image boot.img || true
-          "$TOOLS_DIR/magiskboot_x86" unpack boot.img
+          "$TOOLS_DIR/magiskboot_x86" --unpack boot.img
           rm -f kernel
           cp "$SRC_DIR/out/arch/arm64/boot/Image" kernel
-          "$TOOLS_DIR/magiskboot_x86" repack boot.img boot_new.img
+          "$TOOLS_DIR/magiskboot_x86" --repack boot.img boot_new.img
           cp boot_new.img "$ZIP_ROOT/mesa/eur/boot.img"
 
           echo "===> Inject compiled dtbo.img"
@@ -279,7 +279,7 @@ jobs:
 
           cd "$WORK_DIR/tmp_vendor_boot"
           "$TOOLS_DIR/avbtool.py" erase_footer --image vendor_boot.img || true
-          "$TOOLS_DIR/magiskboot_x86" unpack -h vendor_boot.img
+          "$TOOLS_DIR/magiskboot_x86" --unpack -h vendor_boot.img
 
           if [ -f header ]; then
             sed "1 c\\name=${RP_REV}" header > header_new
@@ -301,7 +301,7 @@ jobs:
             echo "[-] No DTB found, vendor_boot will be repacked without dtb replacement"
           fi
 
-          "$TOOLS_DIR/magiskboot_x86" repack vendor_boot.img vendor_boot_new.img
+          "$TOOLS_DIR/magiskboot_x86" --repack vendor_boot.img vendor_boot_new.img
           cp vendor_boot_new.img "$ZIP_ROOT/mesa/eur/vendor_boot.img"
 
           echo "===> Copy kernel modules if build produced any"
