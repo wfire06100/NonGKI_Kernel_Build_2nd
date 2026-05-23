@@ -195,7 +195,7 @@ jobs:
       - name: 🔩 Pack Process
         uses: ./.github/workflows/pack-process
 
-      - name: 📦 Build EUR custom package from compiled artifacts
+      - name: 📦 Build EUR custom package
         shell: bash
         run: |
           set -euo pipefail
