@@ -238,7 +238,7 @@ jobs:
           TOOLS_DIR="$GITHUB_WORKSPACE/tools"
 
           DATE="$(date +%Y%m%d)"
-          RELEASE_VERSION="Ascendia-KSU"
+          RELEASE_VERSION="Fork-Ascendia-KSU"
           KSU_VER="v1.0.1"
           ANDROID_CODENAME="U"
           ASC_VARIANT="AOSP"
@@ -288,7 +288,15 @@ jobs:
 
           cd "$WORK_DIR/tmp_vendor_boot"
           python3 "$TOOLS_DIR/avbtool.py" erase_footer --image vendor_boot.img || true
-          "$TOOLS_DIR/magiskboot_x86" --unpack vendor_boot.img
+          "$TOOLS_DIR/magiskboot_x86" --unpack vendor_boot.img || true
+
+          echo "===> Inspect vendor_boot unpack outputs"
+          ls -lah
+
+          if [ ! -f header ] && [ ! -f ramdisk.cpio ] && [ ! -f dtb ]; then
+          echo "[-] vendor_boot unpack did not extract expected files"
+          exit 1
+          fi
 
           if [ -f header ]; then
             sed "1 c\\name=${RP_REV}" header > header_new
