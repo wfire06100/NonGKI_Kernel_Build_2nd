@@ -187,6 +187,151 @@ jobs:
 
       - name: 🔩 Pack Process
         uses: ./.github/workflows/pack-process
+
+      - name: 📦 Build EUR custom package from compiled artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "===> Install packaging dependencies"
+          sudo apt-get update
+          sudo apt-get install -y zip unzip bsdiff python3 curl
+
+          mkdir -p "$GITHUB_WORKSPACE/tools"
+
+          if [ ! -f "$GITHUB_WORKSPACE/tools/magiskboot_x86" ]; then
+            curl -L \
+              https://raw.githubusercontent.com/VMOS-XiaoSuan/open-vmos-aosp_5.1/master/tools/magiskboot \
+              -o "$GITHUB_WORKSPACE/tools/magiskboot_x86"
+            chmod +x "$GITHUB_WORKSPACE/tools/magiskboot_x86"
+          fi
+
+          if [ ! -f "$GITHUB_WORKSPACE/tools/avbtool" ]; then
+            curl -L \
+              https://raw.githubusercontent.com/android/platform_external_avb/master/avbtool \
+              -o "$GITHUB_WORKSPACE/tools/avbtool"
+            chmod +x "$GITHUB_WORKSPACE/tools/avbtool"
+          fi
+
+          MAIN_DIR="$GITHUB_WORKSPACE"
+          SRC_DIR="$GITHUB_WORKSPACE/device_kernel"
+          TEMPLATE_DIR="$GITHUB_WORKSPACE/template-zip-file"
+          STOCK_DIR="$TEMPLATE_DIR/images"
+          WORK_DIR="$GITHUB_WORKSPACE/output/eur-custom"
+          ZIP_ROOT="$WORK_DIR/zip"
+          TOOLS_DIR="$GITHUB_WORKSPACE/tools"
+
+          DATE="$(date +%Y%m%d)"
+          RELEASE_VERSION="Ascendia-KSU"
+          KSU_VER="v1.0.1"
+          ANDROID_CODENAME="U"
+          ASC_VARIANT="AOSP"
+          ASC_VAR="A"
+          VARIANT="a52sxqxx"
+          RP_REV="SRPUE26A001"
+
+          echo "===> Validate required inputs"
+          test -d "$TEMPLATE_DIR"
+          test -f "$TEMPLATE_DIR/META-INF/com/google/android/update-binary"
+          test -f "$TEMPLATE_DIR/META-INF/com/google/android/updater-script"
+          test -f "$STOCK_DIR/boot.img"
+          test -f "$STOCK_DIR/vendor_boot.img"
+          test -f "$SRC_DIR/out/arch/arm64/boot/Image"
+          test -f "$SRC_DIR/out/arch/arm64/boot/dtbo.img"
+
+          rm -rf "$WORK_DIR"
+          mkdir -p "$ZIP_ROOT"
+          mkdir -p "$WORK_DIR/Builds"
+
+          echo "===> Copy template zip tree"
+          cp -a "$TEMPLATE_DIR/." "$ZIP_ROOT/"
+
+          mkdir -p "$ZIP_ROOT/mesa/eur"
+          mkdir -p "$ZIP_ROOT/vendor/lib/modules"
+
+          echo "===> Repack boot.img with compiled kernel Image"
+          rm -rf "$WORK_DIR/tmp_boot"
+          mkdir -p "$WORK_DIR/tmp_boot"
+          cp "$STOCK_DIR/boot.img" "$WORK_DIR/tmp_boot/boot.img"
+
+          cd "$WORK_DIR/tmp_boot"
+          "$TOOLS_DIR/avbtool" erase_footer --image boot.img || true
+          "$TOOLS_DIR/magiskboot_x86" unpack boot.img
+          rm -f kernel
+          cp "$SRC_DIR/out/arch/arm64/boot/Image" kernel
+          "$TOOLS_DIR/magiskboot_x86" repack boot.img boot_new.img
+          cp boot_new.img "$ZIP_ROOT/mesa/eur/boot.img"
+
+          echo "===> Inject compiled dtbo.img"
+          cp "$SRC_DIR/out/arch/arm64/boot/dtbo.img" "$ZIP_ROOT/mesa/eur/dtbo.img"
+
+          echo "===> Repack vendor_boot.img with compiled dtb"
+          rm -rf "$WORK_DIR/tmp_vendor_boot"
+          mkdir -p "$WORK_DIR/tmp_vendor_boot"
+          cp "$STOCK_DIR/vendor_boot.img" "$WORK_DIR/tmp_vendor_boot/vendor_boot.img"
+
+          cd "$WORK_DIR/tmp_vendor_boot"
+          "$TOOLS_DIR/avbtool" erase_footer --image vendor_boot.img || true
+          "$TOOLS_DIR/magiskboot_x86" unpack -h vendor_boot.img
+
+          if [ -f header ]; then
+            sed "1 c\\name=${RP_REV}" header > header_new
+            mv header_new header
+          fi
+
+          DTB_CANDIDATE_1="$SRC_DIR/out/arch/arm64/boot/dts/vendor/qcom/yupik.dtb"
+          DTB_CANDIDATE_2="$(find "$SRC_DIR/out" -type f -name '*.dtb' | head -n 1 || true)"
+
+          if [ -f "$DTB_CANDIDATE_1" ]; then
+            rm -f dtb
+            cp "$DTB_CANDIDATE_1" dtb
+            echo "[+] Using DTB: $DTB_CANDIDATE_1"
+          elif [ -n "$DTB_CANDIDATE_2" ] && [ -f "$DTB_CANDIDATE_2" ]; then
+            rm -f dtb
+            cp "$DTB_CANDIDATE_2" dtb
+            echo "[+] Using DTB: $DTB_CANDIDATE_2"
+          else
+            echo "[-] No DTB found, vendor_boot will be repacked without dtb replacement"
+          fi
+
+          "$TOOLS_DIR/magiskboot_x86" repack vendor_boot.img vendor_boot_new.img
+          cp vendor_boot_new.img "$ZIP_ROOT/mesa/eur/vendor_boot.img"
+
+          echo "===> Copy kernel modules if build produced any"
+          if find "$SRC_DIR/out" -type f -name '*.ko' | grep -q .; then
+            find "$SRC_DIR/out" -type f -name '*.ko' -exec cp {} "$ZIP_ROOT/vendor/lib/modules/" \;
+
+            MODULES_BASE="$(find "$SRC_DIR/out" -type f -path '*/lib/modules/*/modules.dep' | head -n 1 | xargs -r dirname || true)"
+            if [ -n "${MODULES_BASE:-}" ] && [ -d "$MODULES_BASE" ]; then
+              [ -f "$MODULES_BASE/modules.alias" ] && cp "$MODULES_BASE/modules.alias" "$ZIP_ROOT/vendor/lib/modules/"
+              [ -f "$MODULES_BASE/modules.dep" ] && cp "$MODULES_BASE/modules.dep" "$ZIP_ROOT/vendor/lib/modules/"
+              [ -f "$MODULES_BASE/modules.softdep" ] && cp "$MODULES_BASE/modules.softdep" "$ZIP_ROOT/vendor/lib/modules/"
+              [ -f "$MODULES_BASE/modules.order" ] && cp "$MODULES_BASE/modules.order" "$ZIP_ROOT/vendor/lib/modules/modules.load" || true
+
+              [ -f "$ZIP_ROOT/vendor/lib/modules/modules.dep" ] && \
+                sed -i 's#\(kernel/[^: ]*/\)\([^: ]*\.ko\)#/vendor/lib/modules/\2#g' "$ZIP_ROOT/vendor/lib/modules/modules.dep"
+
+              [ -f "$ZIP_ROOT/vendor/lib/modules/modules.load" ] && \
+                sed -i 's#.*/##g' "$ZIP_ROOT/vendor/lib/modules/modules.load"
+            fi
+          fi
+
+          echo "===> Patch update-binary placeholders"
+          sed -i -e "s/ksu_version/${KSU_VER}/g" "$ZIP_ROOT/META-INF/com/google/android/update-binary" || true
+          sed -i -e "s/build_date/${DATE}/g" "$ZIP_ROOT/META-INF/com/google/android/update-binary" || true
+
+          echo "===> Cleanup stock images from template root if present"
+          rm -f "$ZIP_ROOT/images/boot.img" "$ZIP_ROOT/images/dtbo.img" "$ZIP_ROOT/images/vendor_boot.img"
+
+          echo "===> Create final flashable zip"
+          cd "$ZIP_ROOT"
+          FINAL_ZIP="${RELEASE_VERSION}_${KSU_VER}_${ASC_VARIANT}_a52sxq_EUR_${DATE}.zip"
+          zip -r9 "$WORK_DIR/Builds/$FINAL_ZIP" mesa META-INF vendor example-modules images
+
+          cd "$MAIN_DIR"
+
+          echo "===> Final package created"
+          ls -lh "$WORK_DIR/Builds/"
         
       - name: ✏️ Upload Artifacts
         uses: ./.github/workflows/upload-files
