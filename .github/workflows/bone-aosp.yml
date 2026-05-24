@@ -28,7 +28,7 @@ env:
   GCC_32_BRANCH : ""
 
   DEFCONFIG_SOURCE: "https://github.com/saadelasfur/android_kernel_samsung_sm7325.git"
-  DEFCONFIG_NAME : "vendor/a52sxq_eur_open_defconfig"
+  DEFCONFIG_NAME : "arch/arm64/configs/vendor/a52sxq_eur_open_defconfig"
   DEFCONFIG_ORIGIN_IMAGE: ""
   DEFCONFIG_FROM_BOOT: false
 
