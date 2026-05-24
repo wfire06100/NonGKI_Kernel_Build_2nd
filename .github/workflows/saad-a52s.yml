@@ -15,7 +15,7 @@ env:
   KERNEL_SOURCE : "https://github.com/saadelasfur/android_kernel_samsung_sm7325.git"
   #KERNEL_SOURCE : "https://github.com/bone-machine/android_kernel_samsung_sm7325_a52s_5g.git"
  # KERNEL_BRANCH : "ksu-next"
-  KERNEL_BRANCH : "stock"
+  KERNEL_BRANCH : "aosp"
   
   #CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
   CLANG_SOURCE : "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r530567.tar.gz"
@@ -222,7 +222,7 @@ jobs:
 
             chmod +x "$GITHUB_WORKSPACE/tools/magiskboot_x86"
           fi
-          
+
           if [ ! -f "$GITHUB_WORKSPACE/tools/avbtool.py" ]; then
             curl -fL \
               "https://android.googlesource.com/platform/external/avb/+/master/avbtool.py?format=TEXT" \
@@ -233,19 +233,33 @@ jobs:
           MAIN_DIR="$GITHUB_WORKSPACE"
           SRC_DIR="$GITHUB_WORKSPACE/device_kernel"
           TEMPLATE_DIR="$GITHUB_WORKSPACE/bone-fork/template-zip-file"
-          STOCK_DIR="$TEMPLATE_DIR/images"
           WORK_DIR="$GITHUB_WORKSPACE/output/eur-custom"
           ZIP_ROOT="$WORK_DIR/zip"
           TOOLS_DIR="$GITHUB_WORKSPACE/tools"
 
+          LINEAGE_BASE_URL="https://mirrorbits.lineageos.org/full/a52sxq/20260520"
+          LINEAGE_IMG_DIR="$WORK_DIR/lineage-images"
+          STOCK_DIR="$LINEAGE_IMG_DIR"
+
           DATE="$(date +%Y%m%d)"
           RELEASE_VERSION="Fork-Ascendia-KSU"
           KSU_VER="v1.0.1"
-          ANDROID_CODENAME="U"
           ASC_VARIANT="AOSP"
-          ASC_VAR="A"
-          VARIANT="a52sxqxx"
           RP_REV="SRPUE26A001"
+
+          rm -rf "$WORK_DIR"
+          mkdir -p "$ZIP_ROOT"
+          mkdir -p "$WORK_DIR/Builds"
+          mkdir -p "$LINEAGE_IMG_DIR"
+
+          echo "===> Download LineageOS base images"
+          curl -fL \
+            "$LINEAGE_BASE_URL/boot.img" \
+            -o "$LINEAGE_IMG_DIR/boot.img"
+
+          curl -fL \
+            "$LINEAGE_BASE_URL/vendor_boot.img" \
+            -o "$LINEAGE_IMG_DIR/vendor_boot.img"
 
           echo "===> Validate required inputs"
           test -d "$TEMPLATE_DIR"
@@ -256,15 +270,14 @@ jobs:
           test -f "$SRC_DIR/out/arch/arm64/boot/Image"
           test -f "$SRC_DIR/out/arch/arm64/boot/dtbo.img"
 
-          rm -rf "$WORK_DIR"
-          mkdir -p "$ZIP_ROOT"
-          mkdir -p "$WORK_DIR/Builds"
-
           echo "===> Copy template zip tree"
           cp -a "$TEMPLATE_DIR/." "$ZIP_ROOT/"
 
-          mkdir -p "$ZIP_ROOT/mesa/eur"
+          mkdir -p "$ZIP_ROOT/mesa"
           mkdir -p "$ZIP_ROOT/vendor/lib/modules"
+
+          echo "===> Check template script paths"
+          grep -R "mesa/eur\|eur/" -n "$ZIP_ROOT/META-INF" || true
 
           echo "===> Repack boot.img with compiled kernel Image"
           rm -rf "$WORK_DIR/tmp_boot"
@@ -277,10 +290,10 @@ jobs:
           rm -f kernel
           cp "$SRC_DIR/out/arch/arm64/boot/Image" kernel
           "$TOOLS_DIR/magiskboot_x86" --repack boot.img boot_new.img
-          cp boot_new.img "$ZIP_ROOT/mesa/eur/boot.img"
+          cp boot_new.img "$ZIP_ROOT/mesa/boot.img"
 
           echo "===> Inject compiled dtbo.img"
-          cp "$SRC_DIR/out/arch/arm64/boot/dtbo.img" "$ZIP_ROOT/mesa/eur/dtbo.img"
+          cp "$SRC_DIR/out/arch/arm64/boot/dtbo.img" "$ZIP_ROOT/mesa/dtbo.img"
 
           echo "===> Repack vendor_boot.img with compiled dtb"
           rm -rf "$WORK_DIR/tmp_vendor_boot"
@@ -295,8 +308,8 @@ jobs:
           ls -lah
 
           if [ ! -f header ] && [ ! -f ramdisk.cpio ] && [ ! -f dtb ]; then
-          echo "[-] vendor_boot unpack did not extract expected files"
-          exit 1
+            echo "[-] vendor_boot unpack did not extract expected files"
+            exit 1
           fi
 
           if [ -f header ]; then
@@ -320,7 +333,7 @@ jobs:
           fi
 
           "$TOOLS_DIR/magiskboot_x86" --repack vendor_boot.img vendor_boot_new.img
-          cp vendor_boot_new.img "$ZIP_ROOT/mesa/eur/vendor_boot.img"
+          cp vendor_boot_new.img "$ZIP_ROOT/mesa/vendor_boot.img"
 
           echo "===> Copy kernel modules if build produced any"
           if find "$SRC_DIR/out" -type f -name '*.ko' | grep -q .; then
@@ -339,6 +352,8 @@ jobs:
               [ -f "$ZIP_ROOT/vendor/lib/modules/modules.load" ] && \
                 sed -i 's#.*/##g' "$ZIP_ROOT/vendor/lib/modules/modules.load"
             fi
+          else
+            rm -rf "$ZIP_ROOT/example-modules"
           fi
 
           echo "===> Patch update-binary placeholders"
@@ -346,12 +361,18 @@ jobs:
           sed -i -e "s/build_date/${DATE}/g" "$ZIP_ROOT/META-INF/com/google/android/update-binary" || true
 
           echo "===> Cleanup stock images from template root if present"
-          rm -f "$ZIP_ROOT/images/boot.img" "$ZIP_ROOT/images/dtbo.img" "$ZIP_ROOT/images/vendor_boot.img"
+          rm -f "$ZIP_ROOT/images/boot.img" \
+                "$ZIP_ROOT/images/dtbo.img" \
+                "$ZIP_ROOT/images/vendor_boot.img"
+
+          echo "===> Show packaged images"
+          ls -lh "$ZIP_ROOT/mesa"
+          sha256sum "$ZIP_ROOT/mesa/boot.img" "$ZIP_ROOT/mesa/vendor_boot.img" "$ZIP_ROOT/mesa/dtbo.img"
 
           echo "===> Create final flashable zip"
           cd "$ZIP_ROOT"
-          FINAL_ZIP="${RELEASE_VERSION}_${KSU_VER}_${ASC_VARIANT}_a52sxq_EUR_${DATE}.zip"
-          zip -r9 "$WORK_DIR/Builds/$FINAL_ZIP" mesa META-INF vendor example-modules images
+          FINAL_ZIP="${RELEASE_VERSION}_${KSU_VER}_${ASC_VARIANT}_a52sxq_${DATE}.zip"
+          zip -r9 "$WORK_DIR/Builds/$FINAL_ZIP" mesa META-INF vendor images
 
           cd "$MAIN_DIR"
 
