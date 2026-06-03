@@ -12,9 +12,10 @@ env:
   CUSTOM_CMDS : "CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu-"
   EXTRA_CMDS : "LLVM=1 LLVM_IAS=1 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip READELF=llvm-readelf HOSTCC=clang HOSTCXX=clang++"
   
-  KERNEL_SOURCE : "https://github.com/saadelasfur/android_kernel_samsung_sm7325.git"
+  #KERNEL_SOURCE : "https://github.com/saadelasfur/android_kernel_samsung_sm7325.git"
   #KERNEL_SOURCE : "https://github.com/wfire06100/bone-fork.git"
-  KERNEL_BRANCH : "ksu-next"
+  KERNEL_SOURCE : "https://github.com/bone-machine/android_kernel_samsung_sm7325_a52s_5g.git"
+  KERNEL_BRANCH : "main"
   #KERNEL_BRANCH : "aosp"
   
   #CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
@@ -47,7 +48,7 @@ env:
 
   BOOT_SOURCE : ""
 
-  NEED_DTBO : false
+  NEED_DTBO : true
   NEED_SAFE_DTBO : false
 
   ROM_TEXT : "aosp_a16"
@@ -56,7 +57,7 @@ env:
   PYTHON_VERSION: "3" # Only 2(Ubuntu 22.04 and Ubuntu 20.04) or 3(Any OS Versions).
 
   PACK_METHOD: "Anykernel3" # Anykernel3 need SOURCE and BRANCH, MKBOOTIMG needn't it.
-  PACK_KMODULES: "false" # if u want pack kernel modules (.ko) into Anykernel3.
+  PACK_KMODULES: "true" # if u want pack kernel modules (.ko) into Anykernel3.
 
   KERNELSU_METHOD: "shell" # shell, manual and only.
 
@@ -82,7 +83,7 @@ env:
 
   HIDE_STUFF: "false" # hide some of the features"
 
-  GENERATE_DTB: "false" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
+  GENERATE_DTB: "true" # if u kernel need DTB , but cannot auto generate it. (Only Anykernel3).
   GENERATE_CHIP: "qcom" # only supported for qcom and mediatek.
 
   BUILD_DEBUGGER: "false" # Output build errors.
