@@ -37,8 +37,8 @@ env:
   KERNELSU_BRANCH : "391eb91"
  # KERNELSU_IN_KERNEL: "true"
 
-  KERNELSU_AUTO_GET : "false" # if u want easy setting kernelsu, u can true.
-  KERNELSU_AUTO_FORK : "next" # magic, rsuntk, next, resukisu and sukisu
+  KERNELSU_AUTO_GET : "" # if u want easy setting kernelsu, u can true.
+  KERNELSU_AUTO_FORK : "" # magic, rsuntk, next, resukisu and sukisu
 
   SUSFS_ENABLE : true
   SUSFS_FIXED : false
