@@ -106,12 +106,19 @@ jobs:
       - name: ⏰ Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⏰ Checkout template repository
+      - name: Parse repository
+        id: repo
+        run: |
+         REPO="${KERNEL_SOURCE#https://github.com/}"
+         REPO="${REPO%.git}"
+         echo "repo=$REPO" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout template repository
         uses: actions/checkout@v4
         with:
-          repository: wfire06100/bone-fork
-          path: bone-fork
-          fetch-depth: 1
+         repository: ${{ steps.repo.outputs.repo }}
+         ref: ${{ env.KERNEL_BRANCH }}
+         path: kernel
 
       - name: ⌛️ Compilation environment preparation
         uses: ./.github/workflows/build-env
