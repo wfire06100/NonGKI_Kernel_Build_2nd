@@ -16,7 +16,7 @@ env:
   KERNEL_SOURCE : "https://github.com/wfire06100/Just-KernelSU-Next-A52s-5G.git"
  # KERNEL_SOURCE : "https://github.com/wfire06100/bone-fork.git"
   #KERNEL_SOURCE : "https://github.com/bone-machine/android_kernel_samsung_sm7325_a52s_5g.git"
-  KERNEL_BRANCH : "ksu-next-oneui"
+  KERNEL_BRANCH : "main"
   #KERNEL_BRANCH : "aosp"
   
   #CLANG_SOURCE : "https://github.com/nduykha/kernel_samsung_sm7150/releases/download/clang/llvm.tar.xz"
